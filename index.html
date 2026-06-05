@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mosaic">
+<meta name="theme-color" content="#111111">
+<title>Mosaic</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #111111;
+    --purple: #AFA9EC;
+    --purple-dim: rgba(175,169,236,0.15);
+    --purple-border: rgba(175,169,236,0.35);
+    --purple-text: #3C3489;
+    --red: #D85A30;
+    --red-bg: #FAECE7;
+    --red-text: #993C1D;
+    --orange: #EF9F27;
+    --orange-bg: #FAEEDA;
+    --orange-text: #854F0B;
+    --green: #639922;
+    --green-bg: #EAF3DE;
+    --green-text: #3B6D11;
+    --border: rgba(0,0,0,0.1);
+    --card-bg: #ffffff;
+    --bg: #F4F3F0;
+    --text: #1a1a1a;
+    --text-muted: #888880;
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overscroll-behavior: none;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--black);
+    padding: calc(var(--safe-top) + 16px) 18px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    overflow: hidden;
+  }
+  /* decorative mosaic dots background */
+  .topbar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(175,169,236,0.12) 1.5px, transparent 1.5px);
+    background-size: 18px 18px;
+    pointer-events: none;
+  }
+  /* accent gradient glow */
+  .topbar::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; left: -20px;
+    width: 200px; height: 80px;
+    background: radial-gradient(ellipse, rgba(175,169,236,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .topbar-row { display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .topbar-brand { display: flex; align-items: center; gap: 12px; }
+  .filaments { flex: 1; margin: 0 10px; overflow: hidden; height: 38px; opacity: 0.5; }
+
+  /* MOSAIC ICON */
+  .mosaic-icon {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+  .mosaic-icon span {
+    border-radius: 3px;
+    display: block;
+  }
+  .mi-1 { background: var(--purple); opacity: 1; }
+  .mi-2 { background: var(--purple); opacity: 0.55; }
+  .mi-3 { background: var(--purple); opacity: 0.25; }
+  .mi-4 { background: var(--purple); opacity: 0.7; }
+  .mi-5 { background: var(--purple); opacity: 1; }
+  .mi-6 { background: var(--purple); opacity: 0.4; }
+  .mi-7 { background: var(--purple); opacity: 0.3; }
+  .mi-8 { background: var(--purple); opacity: 0.6; }
+  .mi-9 { background: var(--purple); opacity: 0.9; }
+
+  .topbar-left { display: flex; flex-direction: column; }
+  .app-name { font-family: 'DM Mono', monospace; color: var(--purple); font-size: 24px; font-weight: 500; letter-spacing: 1px; line-height: 1; }
+  .app-by { color: rgba(175,169,236,0.4); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+  .topbar-btns { display: flex; gap: 8px; }
+  .topbar-btn {
+    background: var(--purple-dim);
+    border: 1px solid var(--purple-border);
+    border-radius: 20px;
+    color: var(--purple);
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 9px 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+  }
+  .topbar-btn svg { width: 18px; height: 18px; }
+
+  /* FILTERS */
+  .filters {
+    display: flex;
+    gap: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip {
+    font-size: 18px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--card-bg);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip.active { background: var(--black); color: var(--purple); border-color: var(--black); }
+
+  /* TASK LIST */
+  .task-list { padding: 16px 16px; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(var(--safe-bottom) + 24px); }
+
+  .empty { text-align: center; color: var(--text-muted); font-size: 17px; padding: 3rem 0; }
+
+  /* TASK CARD */
+  .task-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px 16px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    transition: opacity 0.25s, transform 0.25s;
+    position: relative;
+  }
+  .task-card.p1 { border-left-color: var(--red); }
+  .task-card.p2 { border-left-color: var(--orange); }
+  .task-card.p3 { border-left-color: var(--green); }
+
+  .client { font-size: 17px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+  .action { font-size: 18px; color: var(--text); line-height: 1.35; margin-bottom: 10px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .date-label { font-size: 17px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .date-label svg { width: 26px; height: 26px; }
+  .card-right { display: flex; align-items: center; gap: 8px; }
+
+  .badge {
+    font-size: 17px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 8px;
+  }
+  .badge.p1 { background: var(--red-bg); color: var(--red-text); }
+  .badge.p2 { background: var(--orange-bg); color: var(--orange-text); }
+  .badge.p3 { background: var(--green-bg); color: var(--green-text); }
+
+  .btn-del {
+    background: var(--red-bg);
+    border: none;
+    color: var(--red-text);
+    cursor: pointer;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-del:active { background: #f5c4b8; transform: scale(0.93); }
+  .btn-del svg { width: 26px; height: 26px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 20px);
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--black);
+    color: var(--purple);
+    font-size: 19px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    white-space: nowrap;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* MODAL OVERLAY */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .overlay.open { display: flex; }
+
+  /* BOTTOM SHEET */
+  .sheet {
+    background: var(--card-bg);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(var(--safe-bottom) + 24px);
+    width: 100%;
+    max-width: 480px;
+    animation: slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+  .sheet-title { font-size: 19px; font-weight: 500; color: var(--text); margin-bottom: 16px; }
+
+  label { font-size: 18px; color: var(--text-muted); display: block; margin-bottom: 5px; }
+  input[type=text], input[type=date], select {
+    width: 100%;
+    padding: 12px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    color: var(--text);
+    background: var(--bg);
+    margin-bottom: 12px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--purple); }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--black);
+    color: var(--purple);
+    border: none;
+    border-radius: 12px;
+    padding: 17px;
+    font-size: 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn-cancel {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 18px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-danger { background: var(--red-bg); color: var(--red-text); border: none; border-radius: 12px; padding: 17px; font-size: 18px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; width: 100%; margin-top: 4px; }
+
+  .confirm-client { font-size: 18px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .confirm-action { font-size: 18px; color: var(--text); margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="topbar-brand">
+      <div class="mosaic-icon">
+        <span class="mi-1"></span><span class="mi-2"></span><span class="mi-3"></span>
+        <span class="mi-4"></span><span class="mi-5"></span><span class="mi-6"></span>
+        <span class="mi-7"></span><span class="mi-8"></span><span class="mi-9"></span>
+      </div>
+      <div class="topbar-left">
+        <span class="app-name">Mosaic</span>
+        <span class="app-by">by G. Dimaria</span>
+      </div>
+    </div>
+    <svg class="filaments" viewBox="0 0 160 40" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="fg1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/>
+          <stop offset="25%" stop-color="#AFA9EC" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.25"/>
+        </linearGradient>
+        <linearGradient id="fg2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/>
+          <stop offset="35%" stop-color="#AFA9EC" stop-opacity="0.65"/>
+          <stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.18"/>
+        </linearGradient>
+        <linearGradient id="fg3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/>
+          <stop offset="45%" stop-color="#AFA9EC" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.1"/>
+        </linearGradient>
+        <linearGradient id="fg4" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/>
+          <stop offset="40%" stop-color="#AFA9EC" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.05"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,20 C28,5  52,35 80,18  C108,3  135,28 160,19" stroke="url(#fg1)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M0,14 C22,28 55,7  85,22  C115,37 142,11 160,15" stroke="url(#fg2)" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+      <path d="M0,27 C18,13 46,33 76,21  C106,10 132,30 160,24" stroke="url(#fg2)" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+      <path d="M0,9  C32,21 58,3  90,15  C122,27 146,8  160,11" stroke="url(#fg3)" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+      <path d="M0,33 C26,19 54,37 84,25  C114,14 138,33 160,29" stroke="url(#fg3)" stroke-width="0.6" fill="none" stroke-linecap="round"/>
+      <path d="M0,17 C35,30 62,10 92,23  C122,36 148,16 160,18" stroke="url(#fg4)" stroke-width="0.5" fill="none" stroke-linecap="round"/>
+      <path d="M0,24 C30,10 58,32 88,19  C118,6  144,24 160,22" stroke="url(#fg4)" stroke-width="0.45" fill="none" stroke-linecap="round"/>
+      <path d="M0,6  C38,16 65,2  95,13  C125,24 148,5  160,8"  stroke="url(#fg4)" stroke-width="0.35" fill="none" stroke-linecap="round"/>
+      <path d="M0,36 C24,24 52,38 82,28  C112,18 136,36 160,34" stroke="url(#fg4)" stroke-width="0.3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="topbar-btns">
+      <button class="topbar-btn" onclick="sendEmail()" aria-label="Invia email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      </button>
+      <button class="topbar-btn" onclick="openAdd()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nuovo
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <span class="chip active" onclick="setFilter(this,'tutti')">Tutti</span>
+  <span class="chip" onclick="setFilter(this,'p1')">1</span>
+  <span class="chip" onclick="setFilter(this,'p2')">2</span>
+  <span class="chip" onclick="setFilter(this,'p3')">3</span>
+  <span class="chip" onclick="setFilter(this,'oggi')">Oggi</span>
+</div>
+
+<div class="task-list" id="taskList"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ Email aperta nel client di posta</div>
+
+<!-- ADD SHEET -->
+<div class="overlay" id="addOverlay">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Nuovo task</div>
+    <label>Cliente</label>
+    <input type="text" id="newClient" placeholder="Nome cliente" autocomplete="off">
+    <label>Azione</label>
+    <input type="text" id="newAction" placeholder="Es. Inviare preventivo" autocomplete="off">
+    <label>Scadenza</label>
+    <input type="date" id="newDate">
+    <label>Priorità</label>
+    <select id="newPriority">
+      <option value="p1">1 — Alta</option>
+      <option value="p2" selected>2 — Media</option>
+      <option value="p3">3 — Base</option>
+    </select>
+    <button class="btn-primary" onclick="addTask()">Aggiungi</button>
+    <button class="btn-cancel" onclick="closeAdd()">Annulla</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE SHEET -->
+<div class="overlay" id="confirmOverlay">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Eliminare questo task?</div>
+    <div class="confirm-client" id="confirmClient"></div>
+    <div class="confirm-action" id="confirmAction"></div>
+    <button class="btn-danger" onclick="confirmDelete()">Elimina</button>
+    <button class="btn-cancel" onclick="closeConfirm()">Annulla</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'mosaic_tasks';
+
+let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || [
+  { id: 1, client: 'Francoli Spa', action: 'Inviare preventivo impianto', date: '2026-06-06', priority: 'p1' },
+  { id: 2, client: 'Radici Group', action: 'Richiamare per conferma ordine', date: '2026-06-04', priority: 'p1' },
+  { id: 3, client: 'GR Stampi', action: 'Spedire documentazione fiscale', date: '2026-06-07', priority: 'p2' },
+  { id: 4, client: 'Fandis Srl', action: 'Inviare fattura n.112', date: '2026-06-05', priority: 'p2' },
+  { id: 5, client: 'Markem-Imaje', action: 'Riconciliazione bancaria', date: '2026-06-03', priority: 'p3' },
+];
+
+let nextId = tasks.reduce((m,t) => Math.max(m, t.id), 0) + 1;
+let currentFilter = 'tutti';
+let pendingDelete = null;
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
+function formatDate(d) {
+  if(!d) return '';
+  const t = new Date(d + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((t - today) / 86400000);
+  if(diff === 0) return 'Oggi';
+  if(diff === 1) return 'Domani';
+  if(diff === -1) return 'Ieri';
+  if(diff < 0) return `${Math.abs(diff)}gg fa`;
+  return `fra ${diff}gg`;
+}
+
+const badgeLabel = { p1: '1', p2: '2', p3: '3' };
+
+function calIcon() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
+}
+function trashIcon() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"/>
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+    <rect x="5" y="6" width="14" height="14" rx="3"/>
+    <path d="M10 11v5M14 11v5"/>
+  </svg>`;
+}
+
+function render() {
+  const list = document.getElementById('taskList');
+  let filtered = tasks.filter(t => {
+    if(currentFilter === 'oggi') {
+      const d = new Date(t.date + 'T00:00:00');
+      const tod = new Date(); tod.setHours(0,0,0,0);
+      return d.getTime() === tod.getTime();
+    }
+    if(currentFilter === 'tutti') return true;
+    return t.priority === currentFilter;
+  });
+
+  if(!filtered.length) {
+    list.innerHTML = '<p class="empty">Nessun task</p>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => `
+    <div class="task-card ${t.priority}" id="card-${t.id}">
+      <div class="client">${t.client}</div>
+      <div class="action">${t.action}</div>
+      <div class="card-footer">
+        <span class="date-label">${calIcon()} ${formatDate(t.date)}</span>
+        <div class="card-right">
+          <span class="badge ${t.priority}">${badgeLabel[t.priority]}</span>
+          <button class="btn-del" data-id="${t.id}" aria-label="Elimina">${trashIcon()}</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setFilter(el, f) {
+  currentFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function askDelete(id) {
+  const t = tasks.find(t => t.id === id);
+  if(!t) return;
+  pendingDelete = id;
+  document.getElementById('confirmClient').textContent = t.client;
+  document.getElementById('confirmAction').textContent = t.action;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function confirmDelete() {
+  if(!pendingDelete) return;
+  const card = document.getElementById('card-' + pendingDelete);
+  if(card) { card.style.opacity = '0'; card.style.transform = 'translateX(-30px)'; }
+  setTimeout(() => {
+    tasks = tasks.filter(t => t.id !== pendingDelete);
+    pendingDelete = null;
+    save();
+    render();
+  }, 250);
+  closeConfirm();
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  pendingDelete = null;
+}
+
+function openAdd() {
+  document.getElementById('newClient').value = '';
+  document.getElementById('newAction').value = '';
+  document.getElementById('newDate').value = '';
+  document.getElementById('newPriority').value = 'p2';
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('newClient').focus(), 350);
+}
+
+function closeAdd() {
+  document.getElementById('addOverlay').classList.remove('open');
+}
+
+function addTask() {
+  const c = document.getElementById('newClient').value.trim();
+  const a = document.getElementById('newAction').value.trim();
+  const d = document.getElementById('newDate').value;
+  const p = document.getElementById('newPriority').value;
+  if(!c || !a) { alert('Inserisci cliente e azione.'); return; }
+  tasks.unshift({ id: nextId++, client: c, action: a, date: d || new Date().toISOString().split('T')[0], priority: p });
+  save();
+  document.getElementById('addOverlay').classList.remove('open');
+  render();
+}
+
+function sendEmail() {
+  const now = new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const p1 = tasks.filter(t => t.priority === 'p1');
+  const p2 = tasks.filter(t => t.priority === 'p2');
+  const p3 = tasks.filter(t => t.priority === 'p3');
+  let body = `Report Mosaic — ${now}\n\n`;
+  if(p1.length) { body += `🔴 PRIORITÀ 1 (${p1.length})\n`; p1.forEach(t => body += `  • [${t.client}] ${t.action} — ${formatDate(t.date)}\n`); body += '\n'; }
+  if(p2.length) { body += `🟠 PRIORITÀ 2 (${p2.length})\n`; p2.forEach(t => body += `  • [${t.client}] ${t.action} — ${formatDate(t.date)}\n`); body += '\n'; }
+  if(p3.length) { body += `🟢 PRIORITÀ 3 (${p3.length})\n`; p3.forEach(t => body += `  • [${t.client}] ${t.action} — ${formatDate(t.date)}\n`); body += '\n'; }
+  body += `—\nInviato da Mosaic by G. Dimaria`;
+  window.location.href = `mailto:giuseppe@dimaria.net?subject=${encodeURIComponent('Mosaic — Report task ' + now)}&body=${encodeURIComponent(body)}`;
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Event delegation per i bottoni cestino — funziona su iOS
+document.getElementById('taskList').addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-del');
+  if(btn) { e.preventDefault(); e.stopPropagation(); askDelete(parseInt(btn.dataset.id)); }
+});
+
+// Chiudi overlay toccando lo sfondo
+document.getElementById('confirmOverlay').addEventListener('click', function(e) {
+  if(e.target === this) closeConfirm();
+});
+document.getElementById('addOverlay').addEventListener('click', function(e) {
+  if(e.target === this) closeAdd();
+});
+
+
+render();
+</script>
+</body>
+</html>
