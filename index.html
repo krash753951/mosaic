@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mosaic">
+<meta name="theme-color" content="#111111">
+<title>Mosaic</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:#111111; --purple:#AFA9EC;
+  --purple-dim:rgba(175,169,236,0.15); --purple-border:rgba(175,169,236,0.35);
+  --red:#C94F2A; --red-bg:#FAF0ED; --red-text:#8A3018;
+  --orange:#D98B1A; --orange-bg:#FAF3E5; --orange-text:#7A4E08;
+  --green:#5A8F1A; --green-bg:#EEF5E3; --green-text:#345209;
+  --bg:#F6F5F2; --card:#FFFFFF; --border:rgba(0,0,0,0.09);
+  --text:#1a1a1a; --muted:#999990; --radius:14px;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); overscroll-behavior:none; }
+
+.topbar { background:var(--black); padding:calc(var(--safe-top) + 16px) 18px 12px; position:sticky; top:0; z-index:100; overflow:hidden; }
+.topbar::before { content:''; position:absolute; inset:0; background-image:radial-gradient(circle,rgba(175,169,236,0.1) 1px,transparent 1px); background-size:18px 18px; pointer-events:none; }
+.topbar-row { display:flex; align-items:center; justify-content:space-between; position:relative; gap:8px; }
+.topbar-brand { display:flex; align-items:center; gap:10px; }
+.mosaic-icon { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; width:32px; height:32px; flex-shrink:0; }
+.mosaic-icon span { border-radius:3px; display:block; background:var(--purple); }
+.mi-1{opacity:1}.mi-2{opacity:.5}.mi-3{opacity:.2}.mi-4{opacity:.65}.mi-5{opacity:1}.mi-6{opacity:.35}.mi-7{opacity:.25}.mi-8{opacity:.55}.mi-9{opacity:.85}
+.app-name { font-family:'DM Mono',monospace; color:var(--purple); font-size:18px; font-weight:500; letter-spacing:1px; }
+.app-by { color:rgba(175,169,236,0.4); font-size:9px; letter-spacing:2px; text-transform:uppercase; }
+.filaments { flex:1; overflow:hidden; height:32px; opacity:0.5; }
+.topbar-btns { display:flex; gap:6px; flex-shrink:0; }
+.topbar-btn { background:var(--purple-dim); border:1px solid var(--purple-border); border-radius:20px; color:var(--purple); font-size:13px; font-family:'DM Sans',sans-serif; padding:7px 12px; display:flex; align-items:center; gap:4px; }
+.topbar-btn svg { width:14px; height:14px; pointer-events:none; }
+
+.hint-bar { background:rgba(175,169,236,0.08); padding:8px 16px; font-size:12px; color:var(--muted); text-align:center; border-bottom:1px solid var(--border); }
+
+.filters { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--border); }
+.filters::-webkit-scrollbar { display:none; }
+.chip { font-size:13px; padding:6px 16px; border-radius:20px; border:1px solid var(--border); color:var(--muted); background:var(--card); white-space:nowrap; }
+.chip.active { background:var(--black); color:var(--purple); border-color:var(--black); }
+
+.task-list { padding:14px; display:flex; flex-direction:column; gap:12px; padding-bottom:calc(var(--safe-bottom)+30px); }
+.empty { text-align:center; color:var(--muted); font-size:14px; padding:3rem 0; }
+
+.task-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; border-left:4px solid var(--border); transition:opacity 0.25s,transform 0.25s; }
+.task-card.p1{border-left-color:var(--red)}.task-card.p2{border-left-color:var(--orange)}.task-card.p3{border-left-color:var(--green)}
+.client { font-size:11px; font-weight:700; color:var(--text); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:5px; }
+.action { font-size:16px; color:var(--text); line-height:1.35; margin-bottom:10px; }
+.card-footer { display:flex; align-items:center; justify-content:space-between; }
+.date-label { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+.date-label svg { width:13px; height:13px; pointer-events:none; }
+.badge { font-size:11px; font-family:'DM Mono',monospace; font-weight:500; padding:3px 10px; border-radius:8px; }
+.badge.p1{background:var(--red-bg);color:var(--red-text)}.badge.p2{background:var(--orange-bg);color:var(--orange-text)}.badge.p3{background:var(--green-bg);color:var(--green-text)}
+
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; align-items:flex-end; justify-content:center; }
+.overlay.open { display:flex; }
+.sheet { background:var(--card); border-radius:20px 20px 0 0; padding:20px 20px calc(var(--safe-bottom)+24px); width:100%; animation:slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1); }
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.sheet-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 18px; }
+.sheet-title { font-size:16px; font-weight:500; margin-bottom:16px; }
+label { font-size:12px; color:var(--muted); display:block; margin-bottom:5px; font-weight:500; }
+input[type=text],input[type=date],select { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:15px; color:var(--text); background:var(--bg); margin-bottom:12px; -webkit-appearance:none; outline:none; }
+input:focus,select:focus{border-color:var(--purple)}
+.btn-primary{width:100%;background:var(--black);color:var(--purple);border:none;border-radius:12px;padding:15px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;margin-top:4px;}
+.btn-cancel{width:100%;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:15px;font-family:'DM Sans',sans-serif;margin-top:8px;}
+
+.toast{position:fixed;bottom:calc(var(--safe-bottom)+20px);left:50%;transform:translateX(-50%) translateY(80px);background:var(--black);color:var(--purple);font-size:13px;padding:10px 20px;border-radius:20px;white-space:nowrap;transition:transform 0.3s;z-index:999;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="topbar-brand">
+      <div class="mosaic-icon">
+        <span class="mi-1"></span><span class="mi-2"></span><span class="mi-3"></span>
+        <span class="mi-4"></span><span class="mi-5"></span><span class="mi-6"></span>
+        <span class="mi-7"></span><span class="mi-8"></span><span class="mi-9"></span>
+      </div>
+      <div><div class="app-name">Mosaic</div><div class="app-by">by G. Dimaria</div></div>
+    </div>
+    <svg class="filaments" viewBox="0 0 160 32" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="g1" x1="0%" x2="100%"><stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/><stop offset="30%" stop-color="#AFA9EC" stop-opacity="0.9"/><stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.2"/></linearGradient>
+        <linearGradient id="g2" x1="0%" x2="100%"><stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/><stop offset="40%" stop-color="#AFA9EC" stop-opacity="0.5"/><stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.1"/></linearGradient>
+        <linearGradient id="g3" x1="0%" x2="100%"><stop offset="0%" stop-color="#AFA9EC" stop-opacity="0"/><stop offset="50%" stop-color="#AFA9EC" stop-opacity="0.25"/><stop offset="100%" stop-color="#AFA9EC" stop-opacity="0.05"/></linearGradient>
+      </defs>
+      <path d="M0,16 C28,4 52,28 80,14 C108,2 135,22 160,15" stroke="url(#g1)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M0,10 C22,22 55,5 85,18 C115,30 142,8 160,12" stroke="url(#g2)" stroke-width="1.0" fill="none" stroke-linecap="round"/>
+      <path d="M0,22 C18,10 46,26 76,17 C106,7 132,24 160,20" stroke="url(#g2)" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+      <path d="M0,6 C32,16 58,2 90,12 C122,22 146,5 160,8" stroke="url(#g3)" stroke-width="0.6" fill="none" stroke-linecap="round"/>
+      <path d="M0,26 C26,15 54,30 84,21 C114,11 138,26 160,24" stroke="url(#g3)" stroke-width="0.5" fill="none" stroke-linecap="round"/>
+      <path d="M0,13 C35,24 62,7 92,19 C122,30 148,13 160,15" stroke="url(#g3)" stroke-width="0.35" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="topbar-btns">
+      <button class="topbar-btn" id="btnEmail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      </button>
+      <button class="topbar-btn" id="btnNuovo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Nuovo
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="hint-bar">Tieni premuto su una card per eliminarla</div>
+
+<div class="filters" id="filters">
+  <span class="chip active" data-f="tutti">Tutti</span>
+  <span class="chip" data-f="p1">1</span>
+  <span class="chip" data-f="p2">2</span>
+  <span class="chip" data-f="p3">3</span>
+  <span class="chip" data-f="oggi">Oggi</span>
+</div>
+
+<div class="task-list" id="taskList"></div>
+
+<div class="overlay" id="addOverlay">
+  <div class="sheet" id="addSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Nuovo task</div>
+    <label>Cliente</label><input type="text" id="newClient" placeholder="Nome cliente" autocomplete="off">
+    <label>Azione</label><input type="text" id="newAction" placeholder="Es. Inviare preventivo" autocomplete="off">
+    <label>Scadenza</label><input type="date" id="newDate">
+    <label>Priorità</label>
+    <select id="newPriority">
+      <option value="p1">1 — Alta</option>
+      <option value="p2" selected>2 — Media</option>
+      <option value="p3">3 — Base</option>
+    </select>
+    <button class="btn-primary" id="btnAdd">Aggiungi</button>
+    <button class="btn-cancel" id="btnCancel">Annulla</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Email aperta nel client di posta</div>
+
+<script>
+var SK = 'mosaic_tasks';
+var tasks = JSON.parse(localStorage.getItem(SK) || 'null') || [
+  {id:1,client:'Francoli Spa',action:'Inviare preventivo impianto',date:'2026-06-06',priority:'p1'},
+  {id:2,client:'Radici Group',action:'Richiamare per conferma ordine',date:'2026-06-04',priority:'p1'},
+  {id:3,client:'GR Stampi',action:'Spedire documentazione fiscale',date:'2026-06-07',priority:'p2'},
+  {id:4,client:'Fandis Srl',action:'Inviare fattura n.112',date:'2026-06-05',priority:'p2'},
+  {id:5,client:'Markem-Imaje',action:'Riconciliazione bancaria',date:'2026-06-03',priority:'p3'},
+];
+var nextId = tasks.reduce(function(m,t){return Math.max(m,t.id);},0)+1;
+var filter = 'tutti';
+
+function save(){ localStorage.setItem(SK, JSON.stringify(tasks)); }
+
+function fmt(d){
+  if(!d) return '';
+  var t=new Date(d+'T00:00:00'), now=new Date(); now.setHours(0,0,0,0);
+  var diff=Math.round((t-now)/86400000);
+  if(diff===0)return'Oggi'; if(diff===1)return'Domani'; if(diff===-1)return'Ieri';
+  return diff<0?Math.abs(diff)+'gg fa':'fra '+diff+'gg';
+}
+
+var badgeL={p1:'1',p2:'2',p3:'3'};
+
+function getFiltered(){
+  var now=new Date(); now.setHours(0,0,0,0);
+  return tasks.filter(function(t){
+    if(filter==='oggi'){var d=new Date(t.date+'T00:00:00');return d.getTime()===now.getTime();}
+    return filter==='tutti'||t.priority===filter;
+  });
+}
+
+// ---- CANCELLAZIONE: usa window.confirm() nativo iOS ----
+function askDelete(id){
+  var t = tasks.filter(function(x){return x.id===id;})[0];
+  if(!t) return;
+  var ok = window.confirm('Eliminare questo task?\n\n' + t.client + '\n' + t.action);
+  if(ok){
+    var card = document.getElementById('card'+id);
+    if(card){ card.style.opacity='0'; card.style.transform='translateX(-30px)'; card.style.transition='all 0.2s'; }
+    setTimeout(function(){
+      tasks = tasks.filter(function(x){return x.id!==id;});
+      save(); render();
+    }, 200);
+  }
+}
+
+function render(){
+  var list = document.getElementById('taskList');
+  var filtered = getFiltered();
+
+  // aggiorna chip
+  document.querySelectorAll('.chip').forEach(function(c){
+    c.classList.toggle('active', c.dataset.f===filter);
+  });
+
+  if(!filtered.length){ list.innerHTML='<p class="empty">Nessun task</p>'; return; }
+
+  // costruisci HTML
+  var html = '';
+  filtered.forEach(function(t){
+    html += '<div class="task-card '+t.priority+'" id="card'+t.id+'">' +
+      '<div class="client">'+t.client+'</div>' +
+      '<div class="action">'+t.action+'</div>' +
+      '<div class="card-footer">' +
+        '<span class="date-label">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+          fmt(t.date) +
+        '</span>' +
+        '<span class="badge '+t.priority+'">'+badgeL[t.priority]+'</span>' +
+      '</div>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+
+  // bind long-press su ogni card — con nodi già nel DOM
+  filtered.forEach(function(t){
+    var card = document.getElementById('card'+t.id);
+    var timer = null;
+
+    card.addEventListener('touchstart', function(e){
+      timer = setTimeout(function(){ askDelete(t.id); }, 600);
+    }, {passive:true});
+
+    card.addEventListener('touchend', function(){ clearTimeout(timer); }, {passive:true});
+    card.addEventListener('touchmove', function(){ clearTimeout(timer); }, {passive:true});
+    card.addEventListener('touchcancel', function(){ clearTimeout(timer); }, {passive:true});
+  });
+}
+
+// filtri
+document.getElementById('filters').addEventListener('click', function(e){
+  var chip = e.target.closest('.chip');
+  if(chip){ filter=chip.dataset.f; render(); }
+});
+
+// email
+document.getElementById('btnEmail').addEventListener('click', function(){
+  var now=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var body='Report Mosaic — '+now+'\n\n';
+  ['p1','p2','p3'].forEach(function(p){
+    var g=tasks.filter(function(t){return t.priority===p;});
+    var ico=p==='p1'?'🔴':p==='p2'?'🟠':'🟢';
+    if(g.length){body+=ico+' PRIORITÀ '+p[1]+' ('+g.length+')\n';g.forEach(function(t){body+='  • ['+t.client+'] '+t.action+' — '+fmt(t.date)+'\n';});body+='\n';}
+  });
+  body+='—\nInviato da Mosaic by G. Dimaria';
+  window.location.href='mailto:giuseppe@dimaria.net?subject='+encodeURIComponent('Mosaic — Report task '+now)+'&body='+encodeURIComponent(body);
+  var toast=document.getElementById('toast'); toast.classList.add('show');
+  setTimeout(function(){toast.classList.remove('show');},3000);
+});
+
+// nuovo task
+document.getElementById('btnNuovo').addEventListener('click', function(){
+  document.getElementById('newClient').value='';
+  document.getElementById('newAction').value='';
+  document.getElementById('newDate').value='';
+  document.getElementById('newPriority').value='p2';
+  document.getElementById('addOverlay').classList.add('open');
+});
+
+document.getElementById('btnAdd').addEventListener('click', function(){
+  var c=document.getElementById('newClient').value.trim();
+  var a=document.getElementById('newAction').value.trim();
+  var d=document.getElementById('newDate').value;
+  var p=document.getElementById('newPriority').value;
+  if(!c||!a){alert('Inserisci cliente e azione.');return;}
+  tasks.unshift({id:nextId++,client:c,action:a,date:d||new Date().toISOString().split('T')[0],priority:p});
+  save();
+  document.getElementById('addOverlay').classList.remove('open');
+  render();
+});
+
+document.getElementById('btnCancel').addEventListener('click', function(){
+  document.getElementById('addOverlay').classList.remove('open');
+});
+
+document.getElementById('addOverlay').addEventListener('click', function(e){
+  if(e.target===this) this.classList.remove('open');
+});
+
+render();
+</script>
+</body>
+</html>
